@@ -1,84 +1,91 @@
 import numpy as np
+import torch
 
 class ExtendedKalmanFilter(object):
-    def __init__(self, dt, u_x,u_y, std_acc, x_std_meas, y_std_meas, jacobian_A, jacobian_H):
+    def __init__(self, dt, ux,uy, std_a, x_std, y_std):
         """
-        :param dt: sampling time (time for 1 cycle)
-        :param u_x: acceleration in x-direction
-        :param u_y: acceleration in y-direction
-        :param std_acc: process noise magnitude
-        :param x_std_meas: standard deviation of the measurement in x-direction
-        :param y_std_meas: standard deviation of the measurement in y-direction
+        :param dt: sampling time
+        :param ux: acceleration in x-dir
+        :param uy: acceleration in y-dir
+        :param std_a: process noise magnitude
+        :param x_std: sd in x-dir
+        :param y_std: sd in y-dir
         """
 
-        # Jacobian of F with respects to x
-        self.jacobian_A = jacobian_A
-
-        # Jacobian of H
-        self.jacobian_H = jacobian_H
-
-        # Define sampling time
+        # Sampling time
         self.dt = dt
 
-        # Define the control input variables
-        self.u = np.matrix([[u_x],[u_y]])
+        # Control input variables
+        self.u = torch.tensor([[ux], [uy]])
 
         # Initial State
-        self.x = self.jacobian_A(np.matrix([[0], [0], [0], [0]]))
+        self.x = torch.tensor([[0], [0], [0], [0]])
 
-        # Define the State Transition Matrix A
-        self.A = np.matrix([[1, 0, self.dt, 0],
-                            [0, 1, 0, self.dt],
-                            [0, 0, 1, 0],
-                            [0, 0, 0, 1]])
+        # State Transition Matrix A
+        self.A = torch.tensor([[1, 0, self.dt, 0],
+                           [0, 1, 0, self.dt],
+                           [0, 0, 1, 0],
+                           [0, 0, 0, 1]])
 
-        # Define the Control Input Matrix B
-        self.B = np.matrix([[(self.dt**2)/2, 0],
-                            [0,(self.dt**2)/2],
-                            [self.dt,0],
-                            [0,self.dt]])
+        # Control Input Matrix B
+        self.B = torch.tensor([[(self.dt ** 2) / 2, 0],
+                           [0, (self.dt ** 2) / 2],
+                           [self.dt, 0],
+                           [0, self.dt]])
 
-        # Define Measurement Mapping Matrix
-        self.H = np.matrix([[1, 0, 0, 0],
-                            [0, 1, 0, 0]])
+        # Measurement Mapping Matrix
+        self.H = torch.tensor([[1, 0, 0, 0],
+                           [0, 1, 0, 0]])
 
-        #Initial Process Noise Covariance
-        self.Q = np.matrix([[(self.dt**4)/4, 0, (self.dt**3)/2, 0],
-                            [0, (self.dt**4)/4, 0, (self.dt**3)/2],
-                            [(self.dt**3)/2, 0, self.dt**2, 0],
-                            [0, (self.dt**3)/2, 0, self.dt**2]]) * std_acc**2
+        # Process Noise Covariance
+        self.Q = torch.tensor([[(self.dt ** 4) / 4, 0, (self.dt ** 3) / 2, 0],
+                           [0, (self.dt ** 4) / 4, 0, (self.dt ** 3) / 2],
+                           [(self.dt ** 3) / 2, 0, self.dt ** 2, 0],
+                           [0, (self.dt ** 3) / 2, 0,
+                            self.dt ** 2]]) * std_a ** 2
 
-        #Initial Measurement Noise Covariance
-        self.R = np.matrix([[x_std_meas**2,0],
-                           [0, y_std_meas**2]])
+        # Measurement Noise Covariance
+        self.R = torch.tensor([[x_std ** 2, 0],
+                           [0, y_std ** 2]])
 
-        #Initial Covariance Matrix
-        self.P = np.eye(4)
+        # Covariance Matrix
+        self.P = torch.eye(4)
 
     def predict(self):
 
         # Update time state
-        #x_k =Ax_(k-1) + Bu_(k-1)
-        self.x = self.jacobian_A(np.dot(self.A, self.x) + np.dot(self.B, self.u))
+        self.x = torch.mm(self.A, self.x) + torch.mm(self.B, self.u)
 
         # Calculate error covariance
-        # P= A*P*A' + Q
-        self.P = np.dot(np.dot(self.A, self.P), self.A.T) + self.Q
+        self.P = torch.mm(torch.mm(self.A, self.P), self.A.T) + self.Q
         return self.x[0]
 
     def update(self, z):
 
-        # S = H*P*H'+R
-        S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
+        x1 = self.x[0][0]
+        y1 = self.x[1][0]
+        x_sq = x1 * x1
+        y_sq = y1 * y1
+        den = x_sq + y_sq
+        den1 = torch.sqrt(den)
+
+        H = torch.tensor([[x1 / den1, y1 / den1, 0, 0], [y1 / den, -x1 / den, 0, 0]])
+
+        S = torch.mm(H, torch.mm(self.P, H.T)) + self.R
 
         # Calculate the Kalman Gain
-        # K = P * H'* inv(H*P*H'+R)
-        K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
+        K = torch.mm(torch.mm(self.P, H.T), torch.inverse(S))
 
-        self.x = np.round(self.x + np.dot(K, (z - self.jacobian_H(np.dot(self.H, self.x)))))
+        pred_x = self.x[0][0]
+        pred_y = self.x[1][0]
+        sumSquares = pred_x * pred_x + pred_y * pred_y
+        pred_r = torch.sqrt(sumSquares)
+        pred_b = torch.atan2(pred_x, pred_y) * 180 / np.pi
+        y = torch.tensor([[pred_r], [pred_b]])
 
-        I = np.eye(self.H.shape[1])
+        res = z - y
+        self.x = torch.round(self.x + torch.mm(K, res))
 
         # Update error covariance matrix
-        self.P = (I - (K * self.H)) * self.P
+        self.P = torch.mm((torch.eye(H.shape[1]) - torch.mm(K, H)), self.P)
         return self.x[0]
