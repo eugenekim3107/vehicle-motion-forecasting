@@ -14,7 +14,7 @@ class KalmanFilter(object):
         # Define sampling time
         self.dt = dt
 
-        # Define the  control input variables
+        # Define the control input variables
         self.u = np.matrix([[u_x],[u_y]])
 
         # Initial State
@@ -58,7 +58,7 @@ class KalmanFilter(object):
         # Calculate error covariance
         # P= A*P*A' + Q
         self.P = np.dot(np.dot(self.A, self.P), self.A.T) + self.Q
-        return self.x[0:1]
+        return self.x[0]
 
     def update(self, z):
 
@@ -75,4 +75,4 @@ class KalmanFilter(object):
 
         # Update error covariance matrix
         self.P = (I - (K * self.H)) * self.P
-        return self.x[0:1]
+        return self.x[0]
