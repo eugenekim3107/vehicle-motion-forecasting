@@ -58,18 +58,19 @@ class ArgoverseDataset(Dataset):
 
 # intialize a dataset
 pa = 'palo-alto'
-# au = 'austin'
-# mi = 'miami'
-# pi = 'pittsburgh'
-# db = 'dearborn'
-# dc = 'washington-dc'
+au = 'austin'
+mi = 'miami'
+pi = 'pittsburgh'
+db = 'dearborn'
+dc = 'washington-dc'
 split = 'train'
+
 train_dataset_pa = ArgoverseDataset(city=pa, split=split)
-# train_dataset_au = ArgoverseDataset(city = au, split = split)
-# train_dataset_pi = ArgoverseDataset(city = pi, split = split)
-# train_dataset_db = ArgoverseDataset(city = db, split = split)
-# train_dataset_dc = ArgoverseDataset(city = dc, split = split)
-# train_dataset_mi = ArgoverseDataset(city = mi, split = split)
+train_dataset_au = ArgoverseDataset(city = au, split = split)
+train_dataset_pi = ArgoverseDataset(city = pi, split = split)
+train_dataset_db = ArgoverseDataset(city = db, split = split)
+train_dataset_dc = ArgoverseDataset(city = dc, split = split)
+train_dataset_mi = ArgoverseDataset(city = mi, split = split)
 
 bs = len(train_dataset_pa)
 train_loader_pa = DataLoader(train_dataset_pa,batch_size=bs)

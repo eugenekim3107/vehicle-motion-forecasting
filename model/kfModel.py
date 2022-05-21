@@ -18,33 +18,33 @@ class KalmanFilter(object):
         self.u = np.array([[ux],[uy]])
 
         # Initial State
-        self.x = np.array([[0], [0], [0], [0]])
+        self.x = np.array([[0.], [0], [0], [0]])
 
         # State Transition Matrix A
-        self.A = np.array([[1, 0, self.dt, 0],
+        self.A = np.array([[1., 0, self.dt, 0],
                             [0, 1, 0, self.dt],
                             [0, 0, 1, 0],
                             [0, 0, 0, 1]])
 
         # Control Input Matrix B
-        self.B = np.array([[(self.dt**2)/2, 0],
+        self.B = np.array([[(self.dt**2)/2, 0.],
                             [0,(self.dt**2)/2],
                             [self.dt,0],
                             [0,self.dt]])
 
         # Measurement Mapping Matrix
-        self.H = np.array([[1, 0, 0, 0],
+        self.H = np.array([[1., 0, 0, 0],
                             [0, 1, 0, 0]])
 
         # Process Noise Covariance
-        self.Q = np.array([[(self.dt**4)/4, 0, (self.dt**3)/2, 0],
+        self.Q = np.array([[(self.dt**4)/4, 0., (self.dt**3)/2, 0],
                             [0, (self.dt**4)/4, 0, (self.dt**3)/2],
                             [(self.dt**3)/2, 0, self.dt**2, 0],
                             [0, (self.dt**3)/2, 0, self.dt**2]]) * std_a**2
 
         # Measurement Noise Covariance
         self.R = np.array([[x_std**2,0],
-                           [0, y_std**2]])
+                           [0., y_std**2]])
 
         # Covariance Matrix
         self.P = np.eye(4)
