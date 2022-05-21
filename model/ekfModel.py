@@ -2,21 +2,21 @@ import numpy as np
 import torch
 
 class ExtendedKalmanFilter(object):
-    def __init__(self, dt, ux,uy, std_a, x_std, y_std):
+    def __init__(self, dt, u_x,u_y, std_acc, x_std_meas, y_std_meas):
         """
         :param dt: sampling time
-        :param ux: acceleration in x-dir
-        :param uy: acceleration in y-dir
-        :param std_a: process noise magnitude
-        :param x_std: sd in x-dir
-        :param y_std: sd in y-dir
+        :param u_x: acceleration in x-dir
+        :param u_y: acceleration in y-dir
+        :param std_acc: process noise magnitude
+        :param x_std_meas: sd in x-dir
+        :param y_std_meas: sd in y-dir
         """
 
         # Sampling time
         self.dt = dt
 
         # Control input variables
-        self.u = torch.tensor([[ux], [uy]])
+        self.u = torch.tensor([[u_x], [u_y]])
 
         # Initial State
         self.x = torch.tensor([[0], [0], [0], [0]])
@@ -42,11 +42,11 @@ class ExtendedKalmanFilter(object):
                            [0, (self.dt ** 4) / 4, 0, (self.dt ** 3) / 2],
                            [(self.dt ** 3) / 2, 0, self.dt ** 2, 0],
                            [0, (self.dt ** 3) / 2, 0,
-                            self.dt ** 2]]) * std_a ** 2
+                            self.dt ** 2]]) * std_acc ** 2
 
         # Measurement Noise Covariance
-        self.R = torch.tensor([[x_std ** 2, 0],
-                           [0, y_std ** 2]])
+        self.R = torch.tensor([[x_std_meas ** 2, 0],
+                           [0, y_std_meas ** 2]])
 
         # Covariance Matrix
         self.P = torch.eye(4)
